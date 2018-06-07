@@ -1,1 +1,2 @@
-The objective of the work is to design an innovative digital application to increase the customer satisfaction by providing the comparative information of the product and increase the sales by understanding the customer behavior.
+Abstract:
+Present-day commerce is developing as the main strategy to respond to customer expectations. Incorporating dynamic pricing science as a base, companies can match their pricing strategies across channels facilitating the customer to get the correct price. The objective of the work is to design an innovative digital application to increase the customer satisfaction by providing the comparative information of the product and increase the sales by understanding the customer behavior.
