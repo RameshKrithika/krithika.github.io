@@ -1,0 +1,315 @@
+---
+title: "Food Analytics_Final Project"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## GitHub Documents
+
+This is an R Markdown format used for publishing markdown documents to GitHub. When you click the **Knit** button all R code chunks are run and a markdown file (.md) suitable for publishing to GitHub is generated.
+
+## Including Code
+
+You can include R code in the document as follows:
+
+```{r menu}
+#summary(menu)
+library(packrat)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+library('ProjectTemplate')
+#create.project('Food Analytics_Final Project',template="FULL",merge.strategy = "allow.non.conflict")
+library(readr)
+menu <- read_csv("C:/Krithika/Applied_project-R/menu.csv")               
+View(menu)
+head(menu)
+str(menu)
+library(ggplot2) # Data visualization
+library(readr) # CSV file 
+library(ggthemes) # extra themes for ggplot2
+library(stringr) # for pattern matching
+library(repr)
+library(plotly)
+library(tidyr)
+library(dplyr)
+library(tibble)
+library(purrr)
+```
+
+
+
+
+
+
+
+```{r}
+library(ggplot2)
+ggplot(subset(menu,Category=="Breakfast"), aes(reorder(Item,Calories),Calories,fill=Calories)) + geom_bar(colour="yellow",stat = "identity")+ggtitle("Breakfast Menu Calories") + xlab("Item") + ylab("Calories")+ coord_flip()
+```
+
+```{r}
+library(sqldf)
+Mincal<-aggregate(menu$Calories, by=list(menu$Category), FUN=min)
+colnames(Mincal)[1]<-"Category"
+colnames(Mincal)[2]<-"Calories"
+Mincalmenu<-sqldf("select a.Category,a.Item, a.Calories from menu a, Mincal b where a.Category==b.Category and a.Calories==b.Calories" )
+## The below table gives each category minimum value
+Mincalmenu
+library(ggplot2)
+```
+
+##Association among variables
+
+```{r}
+library(lattice)
+splom(~menu[c(4,6,11,13,15,17,19,20)],groups = NULL, data = menu,axis.line.tck = 0, axis.text.alpha = 0)
+```
+
+
+
+```{r}
+menu<-na.omit(menu)
+m_data<- data.frame(scale(menu[c(4:24)]))
+menu1<-cbind(menu[1:3],m_data)
+library(ggplot2)
+qplot(Calories, Carbohydrates....Daily.Value., data=menu1, color=Category,facets=~Category, size=I(1),
+      xlab="Calories", ylab="Carbohydrates....DailyValue") 
+
+qplot(Calories, Protein, data=menu1,facets=~Category, color=Category, size=I(1),
+      xlab="Calories", ylab="Protein") 
+
+qplot(Calories, Sugars, data=menu1,facets=~Category, color=Category, size=I(1),
+      xlab="Calories", ylab="Sugars")
+
+library(corrplot)
+M <- cor(m_data)
+cex.before <- par("cex")
+par(cex = 0.7)
+corrplot(M, insig = "blank", method = "color",  tl.cex = .75)
+par(cex = cex.before)
+
+```
+## % Nutrient Daily value in different category of menu
+```{r}
+menu <- read_csv("C:/Krithika/Applied_project-R/menu.csv")               
+#View(menu)
+menu %>% filter(Item %in% c("Egg McMuffin","Egg White Delight","Quarter Pounder with Cheese","Cheeseburger","Sausage, Egg & Cheese McGriddles","Premium McWrap Chicken Sweet Chili (Crispy Chicken)"))%>% 
+select(Item,Cholesterol,`Sodium (% Daily Value)`,`Calcium (% Daily Value)`,Protein,`Iron (% Daily Value)`,
+`Vitamin A (% Daily Value)`,`Vitamin C (% Daily Value)`,Sugars,`Saturated Fat (% Daily Value)`)%>%
+gather(nut,value,2:10)%>%ggplot(aes(x="",y=value,fill=nut))+geom_bar(stat="identity",width=4)+
+coord_polar(theta = "y", start=0)+facet_wrap(~Item)+theme(legend.position = "bottom",legend.text=element_text(size=5))+labs(title="Nutrient Daily value",fill="Nutrients")
+```
+
+##
+
+
+
+
+
+
+###  Sodium content in each category of menu
+#The American Heart Association recommends no more than 2,300 milligrams (mgs) a day and an ideal limit of no more than 1,500 mg per day for most adults. 
+  
+```{r}
+plot_ly(x = menu$Category, y=menu$Sodium,color = menu$Category,type = "bar") %>% layout(title = "Sodium",
+                                                                                                          xaxis = list(title = ""),
+                                                                                                          yaxis = list(title = ""),
+                                                                                                          showlegend=FALSE,
+                                                                                                         autosize = T)
+```
+## Sugar present in each category of menu
+According to the American Heart Association (AHA), the maximum amount of added sugars you should eat in a day are (7): Men: 150 calories per day (37.5 grams or 9 teaspoons). Women: 100 calories per day (25 grams or 6 teaspoons).
+```{r}
+plot_ly(x = menu$Category, y=menu$Sugars,color = menu$Category,type = "bar") %>% layout(title = "Sugars",
+                                                                                                          xaxis = list(title = ""),
+                                                                                                          yaxis = list(title = ""),
+                                                                                                          showlegend=FALSE,
+                                                                                                         autosize = T)
+```
+
+
+
+```{r}
+rownames(menu)=as.character(menu$Item)
+head(menu)
+palette(rainbow(12))
+stars(menu[menu$Category=="Breakfast",c(18,21:24)],key.loc=c(4,18.5),draw.segments = T)
+#loading the visualization package
+library(formattable)
+#and also loading dplyr package, which is necessary for data transformation
+library(dplyr)
+```
+##Average Transfat,Sugar,Sodium,Carbohydrates,Cholestrol,Calories present in menu
+
+```{r}
+suppressMessages(library(ggplot2))
+suppressMessages(library(dplyr))
+suppressMessages(library(plotly))
+suppressMessages(library(RColorBrewer))
+suppressMessages(library(devtools))
+suppressMessages(library(yarrr))
+suppressMessages(library(tidyr))
+suppressMessages(library(gridExtra))
+suppressMessages(library(viridis))
+p <-menu %>% group_by(Category)%>%
+    summarise(
+      vit_a = mean(`Vitamin A (% Daily Value)`,na.rm=T),
+      vit_c = mean(`Vitamin C (% Daily Value)`,na.rm=T),
+      iron = mean(`Iron (% Daily Value)`,na.rm=T),
+      calcium = mean(`Calcium (% Daily Value)`,na.rm=T),
+      carbs = mean(`Carbohydrates (% Daily Value)`,na.rm=T),
+      dietary_fiber = mean(`Dietary Fiber (% Daily Value)`,na.rm=T),
+      sodium= mean(`Sodium (% Daily Value)`,na.rm=T),
+      cholestrol = mean(`Cholesterol (% Daily Value)`,na.rm=T)
+      
+    ) %>%
+    gather(type,value,2:9) %>%
+    ggplot(aes(x=Category,y=value))+geom_bar(stat="identity",fill="tomato4")+
+    facet_wrap(~type,ncol=4)+labs(title="Mean Percentage Daily value")+theme(axis.text.x = element_text(size=4,colour ="white"))
+  p
+  
+```
+
+
+
+##Average Transfat,Sugar,Sodium,Carbohydrates,Cholestrol,Calories present in menu
+```{r}
+ p1<-menu %>% group_by(Category)%>%
+    summarise(
+      sugar = mean(Sugars,na.rm=T),
+     # saturatedfat = mean(`Saturated Fat`,na.rm=T)
+      transfat = mean(`Trans Fat`,na.rm=T),
+      sodium = mean(Sodium,na.rm=T),
+      carbohydrates = mean(Carbohydrates,na.rm=T),
+      cholesterol = mean(Cholesterol,na.rm=T),
+      Calories = mean(Calories,na.rm=T),
+      protein = mean(Protein,na.rm=T)
+      
+    ) %>%
+    gather(type,value,2:7) %>%
+    ggplot(aes(x=Category,y=(value)))+geom_bar(stat="identity",fill="tomato4")+
+    facet_wrap(~type,ncol=3)+labs(title="Average Transfat,Sugar,Sodium,Carbohydrates,Cholestrol,Calories")+theme(axis.text.x = element_text(size=4))+coord_flip()
+  p1
+  
+
+```
+
+##Average Fat Percentage Daily Value in each category of menu
+
+```{r}
+p3<-menu %>% group_by(Category)%>%
+    summarise(
+      totalfat = mean(`Total Fat (% Daily Value)`,na.rm=T),
+      saturatedfat = mean(`Saturated Fat (% Daily Value)`,na.rm=T)
+      
+    ) %>%
+    gather(type,value,c(2,3)) %>%
+    ggplot(aes(x=Category,y=(value)))+geom_bar(stat="identity",fill="hotpink")+
+    facet_wrap(~type,ncol=3)+labs(title="Average Fat Percentage Daily Value")+theme(axis.text.x = element_text(size=6,colour="navyblue"),aspect.ratio = 3/4)+coord_polar()
+  p3
+```
+
+## Percetage of calories from fat
+```{r}
+library(tidyr)
+  t <- menu %>% na.omit() %>% mutate(fatpercentage = 100*(menu$'Calories from Fat'/menu$'Calories'))
+ p4 <-ggplot(data=t,aes(fatpercentage))+geom_freqpoly(mapping =NULL,data=t,color="tomato4",position="identity",na.rm = FALSE)
+p4
+
+```
+
+
+## Calories and 
+```{r}
+
+g1<-menu%>%ggplot(aes(x=Cholesterol,y=Calories))+geom_point(col="slateblue4")+geom_smooth(method="lm",col="slateblue4")
+g2<-menu%>%ggplot(aes(x=Carbohydrates,y=Calories))+geom_point(col="tomato4")+geom_smooth(method="lm",col="tomato4")
+g3<-menu%>%ggplot(aes(x=`Total Fat`,y=Calories))+geom_point(col="magenta")+geom_smooth(method="lm",col="magenta")
+g3<-menu%>%ggplot(aes(x=Sugars,y=Calories))+geom_point(col="navyblue")+geom_smooth(method="lm",col="navyblue")
+g4<-menu%>%ggplot(aes(x=Protein,y=Calories))+geom_point(col="firebrick4")+geom_smooth(method="lm",col="firebrick4")
+g5<-menu%>%ggplot(aes(x=Sodium,y=Calories))+geom_point(col="darkorchid4")+geom_smooth(method="lm",col="darkorchid4")
+g6<-menu%>%ggplot(aes(x=`Saturated Fat`,y=Calories))+geom_point(col="olivedrab4")+geom_smooth(method="lm",col="olivedrab4")
+g7<-menu%>%ggplot(aes(x=`Dietary Fiber`,y=Calories))+geom_point(col="navyblue")+geom_smooth(method="lm",col="navyblue")
+g8<-menu%>%ggplot(aes(x=`Trans Fat`,y=Calories))+geom_point(col="hotpink")+geom_smooth(method="lm",col="hotpink")
+grid.arrange(g1,g2,g3,g4,g5,g6,g7,g8,nrow=3,ncol=4)
+
+```
+##split the dataset
+```{r}
+library(caTools)
+set.seed(2) #to get the same split everytime
+split <- sample.split(menu$Calories,SplitRatio = 0.60)
+train <- subset(menu,split == "TRUE")
+test <- subset(menu, split == "FALSE")
+```
+
+
+##Linear regression model between calories and Saturated fat.
+Independent Variable - Saturated fat
+
+Scatter plot and Conditional expectation(mean) plot
+```{r}
+require(dplyr)
+#Scatter PLot
+plot(train$`Saturated Fat`,train$Calories,main = "Scatter Plot",xlab = "Saturated Fat", ylab = "Calories")
+abline(lm(train$Calories~train$`Saturated Fat`))
+#Conditional Expectation Plot
+dataexp <- summarise(group_by(train,`Saturated Fat`),calmean = mean(Calories))
+plot(dataexp$`Saturated Fat`,dataexp$calmean,xlab = "Calories from Fat",ylab = "mean - calories",main = "Conditional 
+     Expectation(mean) Plot")
+```
+
+##Linear Regression Model
+
+```{r}
+model1 <- lm(Calories~`Saturated Fat`,data = train)
+summary(model1)
+```
+
+
+value of intercept = 128.816  value of slope =  40.328 
+
+Both the values are significant(*** refers to high signficance) R-squared = 73% (73% of variance in calories is explained by Saturated fat)
+The overall p-value is also significant.
+
+The linear equation to predict calories : Calories =  128.816 + 40.328 *saturated fat
+
+##Multiple regression Model
+R - sq value is almost 1. These three variables almost explains 100% of variance in calories
+```{r}
+model <- lm(Calories~ `Saturated Fat` + Protein + Carbohydrates, data = train)
+summary(model)
+```
+##Regression Diagnostics
+```{r}
+plot(model, which = 1:4)
+```
+```{r}
+train <- train[-c(120,121,259),]
+model <- lm(Calories~ `Saturated Fat` + Protein + Carbohydrates, data = train)
+summary(model)
+```
+```{r}
+predictions <- predict(model,test)
+predictions
+```
+```{r}
+plot(test$Calories,type = "l",lty = 1.8, col="navyblue")
+lines(predictions,type = "l", col = "orange")
+```
+
+##Future Prediction, calories we receive=328.3043
+```{r}
+predict(model,data.frame('Saturated Fat'<-10,Protein = 10,Carbohydrates = 30))
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
