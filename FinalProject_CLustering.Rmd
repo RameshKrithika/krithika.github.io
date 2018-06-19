@@ -1,0 +1,187 @@
+---
+title: "Final_Clustering"
+author: "KrithikaRamesh"
+date: "June 15, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+
+```{r , echo=FALSE}
+library(cluster)
+library(ggplot2)
+library(dendextend)
+library(dplyr)
+library(datasets)
+library(NbClust)
+library(heatmaply)
+library(kohonen)
+library(party)
+```
+
+```{r}
+menu1 <- read_csv("C:/Users/rames/Desktop/menu1.csv")
+View(menu1)
+class(menu1)
+summary(menu1)
+```
+```{r}
+#str(menu1)
+```
+```{r}
+#Let's clean the data to perform clustering
+# Delete first column
+menu1$Category <-NULL
+View(menu1)
+```
+
+```{r}
+# First convert column 2 to numeric
+menu1[, 2] <-lapply(menu1[,2], as.numeric)
+str(menu1)
+```
+
+
+
+
+
+```{r}
+# Select Product Data Subset that has less than 25 NA's
+mDataSubset <- menu1[rowSums(is.na(menu1))<25,]
+summary(mDataSubset)
+head(mDataSubset)
+```
+
+
+
+
+```{r}
+# Remove duplicates
+CleanMData <- mDataSubset %>% distinct(Item , .keep_all = TRUE)
+
+head(CleanMData)
+hist(CleanMData$Calories)
+qqnorm(CleanMData$Calories)
+qqline(CleanMData$Calories)
+hist(CleanMData$Cholesterol)
+
+# Set NA's to zero
+CleanMData[is.na(CleanMData)] <- 0
+head(CleanMData)
+#str(CleanMenuData)
+
+```
+
+
+```{r}
+
+
+# Delete column "Item".
+CleanMData$Item <- NULL
+summary(CleanMData)
+View(CleanMData)
+
+# Scale the data
+ScaledMData <- scale(CleanMData, center = FALSE)
+ScaledMData[is.na(ScaledMData)] <- 0
+```
+
+```{r}
+hist(ScaledMData)
+```
+```{r}
+# Clustering with different algorithms
+#Best number of cluster for the data
+bestK <- NbClust(ScaledMData, min.nc=3, max.nc=7,index = "kl", method="kmeans")
+bestK$Best.nc
+```
+```{r}
+#bestK$Best.partition
+head(CleanMData)
+```
+```{r}
+#Elbow in the resulting plot suggests a suitable number of clusters for the kmeans.
+wgss <- (nrow(ScaledMData)-1)*sum(apply(ScaledMData,2,var))
+for (i in 2:7) wgss[i] <- sum(kmeans(ScaledMData,
+                                      centers=i)$withinss)
+#Plot elbow model showing 3 numbers of  clusters
+plot(1:7, wgss, type="b", xlab="Number of Clusters",
+     ylab=" sum of squares within groups")
+```
+```{r}
+#Kmeans clustering by setting 5 clusters
+set.seed(20)
+mKCluster1 <- kmeans(CleanMData[, 3:4], 7, nstart = 20)
+mKCluster1
+mKCluster1$size
+mKCluster1$centers
+mKCluster1$cluster <- as.factor(mKCluster1$cluster)
+#ggplot(CleanMData, aes(Calories, 'Caloriesfrom Fat', color = mKCluster1$cluster), environment=environment()) + geom_point()
+```
+```{r}
+# Kmeans with best number of cluster i;e 4 clusters
+set.seed(20)
+menuKCluster2 <- kmeans(CleanMenuData[ , 3:4], 5, nstart = 20)
+menuKCluster2
+menuKCluster2$size
+menuKCluster2$centers
+menuKCluster2$cluster <- as.factor(menuKCluster2$cluster)
+ggplot(CleanMenuData, aes(Calories, 'Total Fat', color = menuKCluster2$cluster), environment=environment()) + geom_point()
+```
+```{r}
+library(broom)
+#Explore k, from 1 to 9, on this clustering. First cluster the data 9 times, each time different k
+kclusts <- data.frame(k=1:9) %>% group_by(k) %>% do(kclust=kmeans(ScaledMenuData, .$k))
+
+# Tidy the clusterings using augment and glance 
+assignments <- kclusts %>% group_by(k) %>% do(augment(.$kclust[[1]], ScaledMenuData))
+clusterings <- kclusts %>% group_by(k) %>% do(glance(.$kclust[[1]]))
+```
+```{r}
+# plot the original points, with each point colored according to the original cluster
+p1 <- ggplot(assignments, aes(Calories, Calories.from.Fat)) + geom_point(aes(color=.cluster)) + facet_wrap(~ k)
+p1
+```
+```{r}
+p2 <- ggplot(assignments, aes(Calories, Cholesterol)) + geom_point(aes(color=.cluster)) + facet_wrap(~ k)
+p2
+```
+```{r}
+p3 <- ggplot(assignments, aes(Calories, Sodium)) + geom_point(aes(color=.cluster)) + facet_wrap(~ k)
+p3
+```
+
+```{r}
+p5 <- ggplot(assignments, aes(Calories, Protein)) + geom_point(aes(color=.cluster)) + facet_wrap(~ k)
+p5
+```
+
+```{r}
+p3 <- ggplot(assignments, aes(Calories, Sugars)) + geom_point(aes(color=.cluster)) + facet_wrap(~ k)
+p3
+```
+
+
+
+
+
+```{r}
+ggplot(clusterings, aes(k, tot.withinss)) + geom_line()
+```
+
+```{r}
+set.seed(20)
+Myhclust <- function(ScaledMenuData) hclust(ScaledMenuData, method="ward.D2")
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
